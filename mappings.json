@@ -21,6 +21,9 @@
   "matiere_default_location": {
     "SPE": "Terrain"
   },
+  "hide_if_overlap": {
+    "LV": ["ANG", "ESP", "RUS", "ALL", "ITA", "CHI", "JAP", "POR", "GER", "ARA"]
+  },
   "free_form_rules": [
     {"match": "^CHTPS\\b", "title": "TPS - Chimie"},
     {"match": "^CHTP\\b", "title": "TP - Chimie"},
