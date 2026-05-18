@@ -8,15 +8,18 @@
     "ANG": "Anglais",
     "SOU": "Soutien",
     "ACT": "Activité",
-    "SPE": "Spé",
+    "SPE": "Rugby",
     "HU": "Humanités",
     "PPP": "PPP",
     "CE": "CE",
-    "CO": "CO",
+    "CO": "Concep",
     "ETRE": "ETRE",
-    "ISN": "ISN",
-    "TH": "TH",
+    "ISN": "Info",
+    "TH": "Thermo",
     "OMNI": "OMNI"
+  },
+  "matiere_default_location": {
+    "SPE": "Terrain"
   },
   "free_form_rules": [
     {"match": "^CHTPS\\b", "title": "TPS - Chimie"},
