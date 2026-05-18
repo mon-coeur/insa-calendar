@@ -1,0 +1,34 @@
+{
+  "matiere": {
+    "MA": "Math",
+    "PH": "Physique",
+    "CH": "Chimie",
+    "EPS": "Sport",
+    "LV": "Langue",
+    "ANG": "Anglais",
+    "SOU": "Soutien",
+    "ACT": "Activité",
+    "SPE": "Rugby",
+    "HU": "Humanités",
+    "PPP": "PPP",
+    "CE": "CE",
+    "CO": "Concep",
+    "ETRE": "ETRE",
+    "ISN": "Info",
+    "TH": "Thermo",
+    "OMNI": "OMNI"
+  },
+  "matiere_default_location": {
+    "SPE": "Terrain"
+  },
+  "hide_if_overlap": {
+    "LV": ["*"]
+  },
+  "free_form_rules": [
+    {"match": "^CHTPS\\b", "title": "TPS - Chimie"},
+    {"match": "^CHTP\\b", "title": "TP - Chimie"},
+    {"match": "^TP\\s+PH\\b", "title": "TP - Physique"},
+    {"match": "^TP\\s+MA\\b", "title": "TP - Math"},
+    {"match": "^TP\\s+CH\\b", "title": "TP - Chimie"}
+  ]
+}
