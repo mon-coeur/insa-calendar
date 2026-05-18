@@ -1,0 +1,28 @@
+{
+  "matiere": {
+    "MA": "Math",
+    "PH": "Physique",
+    "CH": "Chimie",
+    "EPS": "Sport",
+    "LV": "Langue",
+    "ANG": "Anglais",
+    "SOU": "Soutien",
+    "ACT": "Activité",
+    "SPE": "Spé",
+    "HU": "Humanités",
+    "PPP": "PPP",
+    "CE": "CE",
+    "CO": "CO",
+    "ETRE": "ETRE",
+    "ISN": "ISN",
+    "TH": "TH",
+    "OMNI": "OMNI"
+  },
+  "free_form_rules": [
+    {"match": "^CHTPS\\b", "title": "TPS - Chimie"},
+    {"match": "^CHTP\\b", "title": "TP - Chimie"},
+    {"match": "^TP\\s+PH\\b", "title": "TP - Physique"},
+    {"match": "^TP\\s+MA\\b", "title": "TP - Math"},
+    {"match": "^TP\\s+CH\\b", "title": "TP - Chimie"}
+  ]
+}
