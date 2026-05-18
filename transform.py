@@ -15,6 +15,7 @@ ROOT = Path(__file__).parent
 CFG = json.loads((ROOT / "mappings.json").read_text(encoding="utf-8"))
 MATIERE = CFG.get("matiere", {})
 DEFAULT_LOC = CFG.get("matiere_default_location", {})
+HIDE_IF_OVERLAP = CFG.get("hide_if_overlap", {})
 FREE_RULES = [(re.compile(r["match"]), r["title"]) for r in CFG.get("free_form_rules", [])]
 
 INSA_RE = re.compile(
@@ -39,7 +40,6 @@ def fold(line):
 
 
 def clean_location(loc):
-    """Retourne salle nettoyee ou '' si rien d'utilisable."""
     if not loc:
         return ""
     parts = [p.strip() for p in loc.split(",") if p.strip()]
@@ -63,8 +63,25 @@ def clean_location(loc):
 
 
 def join_parts(*parts):
-    """Joint les morceaux non vides avec ' - '."""
     return " - ".join(p for p in parts if p)
+
+
+def extract_dtstart(block):
+    for line in block:
+        if line.startswith("DTSTART"):
+            _, _, val = line.partition(":")
+            return val.strip()
+    return None
+
+
+def extract_mat_code(block):
+    for line in block:
+        if line.startswith("SUMMARY"):
+            _, _, s = line.partition(":")
+            m = INSA_RE.search(s)
+            if m:
+                return m.group(1)
+    return None
 
 
 def transform_summary(summary, location):
@@ -103,22 +120,60 @@ def transform_block(block):
 def main():
     raw = urllib.request.urlopen(ICS_URL, timeout=60).read().decode("utf-8", errors="replace")
     raw = unfold(raw)
-    out, block, n = [], None, 0
+
+    # Pass 1 : parse en blocs
+    pre, blocks, post = [], [], []
+    cur = None
+    seen_first_event = False
     for line in raw.splitlines():
         if line.startswith("BEGIN:VEVENT"):
-            block = [line]
-            n += 1
-        elif line.startswith("END:VEVENT") and block is not None:
-            block.append(line)
-            out.extend(transform_block(block))
-            block = None
-        elif block is not None:
-            block.append(line)
+            cur = [line]
+            seen_first_event = True
+        elif line.startswith("END:VEVENT") and cur is not None:
+            cur.append(line)
+            blocks.append(cur)
+            cur = None
+        elif cur is not None:
+            cur.append(line)
+        elif not seen_first_event:
+            pre.append(line)
         else:
-            out.append(line)
+            post.append(line)
+
+    # Pass 2 : index dtstart -> set des codes matiere
+    slot_codes = {}
+    for b in blocks:
+        ds = extract_dtstart(b)
+        code = extract_mat_code(b)
+        if ds and code:
+            slot_codes.setdefault(ds, set()).add(code)
+
+    # Pass 3 : filtrer puis transformer
+    out_blocks = []
+    n_drop = 0
+    for b in blocks:
+        code = extract_mat_code(b)
+        ds = extract_dtstart(b)
+        if code in HIDE_IF_OVERLAP and ds:
+            rule = HIDE_IF_OVERLAP[code]
+            others = slot_codes.get(ds, set()) - {code}
+            if "*" in rule:
+                drop = bool(others)
+            else:
+                drop = bool(set(rule) & others)
+            if drop:
+                n_drop += 1
+                continue
+        out_blocks.append(transform_block(b))
+
+    # Reassemble
+    out = list(pre)
+    for b in out_blocks:
+        out.extend(b)
+    out.extend(post)
     folded = "\r\n".join(fold(l) for l in out) + "\r\n"
     (ROOT / "calendar.ics").write_text(folded, encoding="utf-8")
-    print(f"OK: {n} evenements ecrits.")
+    print(f"OK: {len(out_blocks)} evenements ecrits ({n_drop} doublons supprimes).")
 
 
 if __name__ == "__main__":
