@@ -14,19 +14,19 @@ ICS_URL = os.environ.get(
 ROOT = Path(__file__).parent
 CFG = json.loads((ROOT / "mappings.json").read_text(encoding="utf-8"))
 MATIERE = CFG.get("matiere", {})
+DEFAULT_LOC = CFG.get("matiere_default_location", {})
 FREE_RULES = [(re.compile(r["match"]), r["title"]) for r in CFG.get("free_form_rules", [])]
-TYPES = {"CM", "TD", "TP", "EV", "EDT", "DS", "CC", "EX"}
 
 INSA_RE = re.compile(
     r"::([A-Z]{2,5}[A-Z0-9]?)(?:-[A-Z0-9-]+)?:(CM|TD|TP|EV|EDT|DS|CC|EX)::"
 )
 
 
-def unfold(text: str) -> str:
+def unfold(text):
     return re.sub(r"\r?\n[ \t]", "", text)
 
 
-def fold(line: str) -> str:
+def fold(line):
     b = line.encode("utf-8")
     if len(b) <= 75:
         return line
@@ -38,9 +38,10 @@ def fold(line: str) -> str:
     return "\r\n".join(c.decode("utf-8", errors="ignore") for c in chunks)
 
 
-def clean_location(loc: str) -> str:
+def clean_location(loc):
+    """Retourne salle nettoyee ou '' si rien d'utilisable."""
     if not loc:
-        return "?"
+        return ""
     parts = [p.strip() for p in loc.split(",") if p.strip()]
     cleaned = []
     for raw in parts:
@@ -51,26 +52,34 @@ def clean_location(loc: str) -> str:
             x = segs[1] if len(segs) >= 2 else segs[0]
         x = re.sub(r"^(Amphi|Salle|Labo|Room)\s+", "", x, flags=re.IGNORECASE)
         first = x.split()[0] if x.split() else x
-        cleaned.append(first)
+        if first:
+            cleaned.append(first)
     seen, result = set(), []
     for p in cleaned:
         if p not in seen:
             seen.add(p)
             result.append(p)
-    return " / ".join(result) if result else "?"
+    return " / ".join(result)
 
 
-def transform_summary(summary: str, location: str):
+def join_parts(*parts):
+    """Joint les morceaux non vides avec ' - '."""
+    return " - ".join(p for p in parts if p)
+
+
+def transform_summary(summary, location):
     m = INSA_RE.search(summary)
     salle = clean_location(location)
     if m:
         mat_code = m.group(1)
         typ = m.group(2)
         mat = MATIERE.get(mat_code, mat_code)
-        return f"{typ} - {mat} - {salle}", True
+        if not salle:
+            salle = DEFAULT_LOC.get(mat_code, "")
+        return join_parts(typ, mat, salle), True
     for pat, title in FREE_RULES:
         if pat.search(summary):
-            return f"{title} - {salle}" if salle != "?" else title, True
+            return join_parts(title, salle), True
     return summary, False
 
 
